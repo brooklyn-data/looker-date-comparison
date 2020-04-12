@@ -1,14 +1,13 @@
+# Date Comparison File
+
 # this is the code for the date comparison tool, which mimics what google 360 does in the browser in comparing two different date ranges. use with _date_dim.view.lkml
 view: _date_comparison {
-#  label: "Timeline Comparison Fields"
-
   extension: required
   filter: current_date_range {
     view_label: "Timeline Comparison Fields"
     label: "1. Date Range"
     description: "Select the date range you are interested in using this filter, can be used by itself. Make sure any filter on Event Date covers this period, or is removed."
     type: date
-    convert_tz: yes
   }
   filter: previous_date_range {
     view_label: "Timeline Comparison Fields"
@@ -18,28 +17,24 @@ view: _date_comparison {
     description: "Use this if you want to specify a custom date range to compare to (limited to 2 comparison periods). Always use with '1. Date Range' filter (or it will error). Make sure any filter on Event Date covers this period, or is removed."
 
     type: date
-    convert_tz: yes
   }
 
-  dimension_group: in_period {
-    type: duration
-    intervals: [day]
+  dimension: days_in_period {
     description: "Gives the number of days in the current period date range"
-    sql_start: {% date_start current_date_range %} ;;
-    sql_end: {% date_end current_date_range %} ;;
+    type: number
+    sql: DATEDIFF(day, {% date_start current_date_range %}, {% date_end current_date_range %}) ;;
     hidden:  yes
   }
 
- dimension: period_2_start {
-    view_label: "Timeline Comparison Fields"
+  dimension: period_2_start {
     description: "Calculates the start of the previous period"
-    type: date_raw
+    type: date
     sql:
     {% if compare_to._in_query %}
       {% if compare_to._parameter_value == "Period" %}
-        TIMESTAMP_SUB({% date_start current_date_range %} , INTERVAL ${days_in_period} DAY)
+        DATEADD(day, -1*${days_in_period},{% date_start current_date_range %} )
       {% else %}
-        TIMESTAMP(DATETIME_SUB(DATETIME({% date_start current_date_range %}) , INTERVAL 1 {% parameter compare_to %}))
+        DATEADD({% parameter compare_to %},-1,{% date_start current_date_range %} )
       {% endif %}
     {% else %}
       {% date_start previous_date_range %}
@@ -48,15 +43,14 @@ view: _date_comparison {
   }
 
   dimension: period_2_end {
-    view_label: "Timeline Comparison Fields"
     description: "Calculates the end of the previous period"
-    type: date_raw
+    type: date
     sql:
     {% if compare_to._in_query %}
       {% if compare_to._parameter_value == "Period" %}
-        TIMESTAMP_SUB({% date_start current_date_range %}, INTERVAL 1 DAY)
+        DATEADD(day,-1,{% date_start current_date_range %})
       {% else %}
-        TIMESTAMP(DATETIME_SUB(DATETIME_SUB(DATETIME({% date_end current_date_range %}), INTERVAL 1 DAY), INTERVAL 1 {% parameter compare_to %}))
+        DATEADD({% parameter compare_to %},-1,DATEADD(day,-1,{% date_end current_date_range %} ) )
       {% endif %}
     {% else %}
       {% date_end previous_date_range %}
@@ -65,54 +59,50 @@ view: _date_comparison {
   }
 
   dimension: period_3_start {
-    view_label: "Timeline Comparison Fields"
     description: "Calculates the start of 2 periods ago"
-    type: date_raw
+    type: date
     sql:
     {% if compare_to._parameter_value == "Period" %}
-      TIMESTAMP_SUB({% date_start current_date_range %}, INTERVAL 2*${days_in_period} DAY)
+        DATEADD(day,-2*${days_in_period},{% date_start current_date_range %})
     {% else %}
-      TIMESTAMP(DATETIME_SUB(DATETIME({% date_start current_date_range %}), INTERVAL 2 {% parameter compare_to %}))
+        DATEADD({% parameter compare_to %},-2,{% date_start current_date_range %}  )
     {% endif %};;
     hidden: yes
 
   }
 
   dimension: period_3_end {
-    view_label: "Timeline Comparison Fields"
     description: "Calculates the end of 2 periods ago"
-    type: date_raw
+    type: date
     sql:
     {% if compare_to._parameter_value == "Period" %}
-      TIMESTAMP_SUB(${period_2_start}, INTERVAL 1 DAY)
+      DATEADD(day,-1,${period_2_start})
     {% else %}
-      TIMESTAMP(DATETIME_SUB(DATETIME_SUB(DATETIME({% date_end current_date_range %}), INTERVAL 1 DAY), INTERVAL 2 {% parameter compare_to %}))
+      DATEADD({% parameter compare_to %},-2,DATEADD(day,-1,{% date_end current_date_range %}) )
     {% endif %};;
     hidden: yes
   }
 
   dimension: period_4_start {
-    view_label: "Timeline Comparison Fields"
     description: "Calculates the start of 4 periods ago"
-    type: date_raw
+    type: date
     sql:
     {% if compare_to._parameter_value == "Period" %}
-      TIMESTAMP_SUB({% date_start current_date_range %}, INTERVAL 3*${days_in_period} DAY)
+        DATEADD(day,-3*${days_in_period},{% date_start current_date_range %} )
     {% else %}
-      TIMESTAMP(DATETIME_SUB(DATETIME({% date_start current_date_range %}), INTERVAL 3 {% parameter compare_to %}))
+        DATEADD({% parameter compare_to %},-3,{% date_start current_date_range %} )
     {% endif %};;
     hidden: yes
   }
 
   dimension: period_4_end {
-    view_label: "Timeline Comparison Fields"
     description: "Calculates the end of 4 periods ago"
-    type: date_raw
+    type: date
     sql:
       {% if compare_to._parameter_value == "Period" %}
-        TIMESTAMP_SUB(${period_2_start}, INTERVAL 1 DAY)
+      DATEADD(day,-1,${period_2_start})
       {% else %}
-        TIMESTAMP(DATETIME_SUB(DATETIME_SUB(DATETIME({% date_end current_date_range %}), INTERVAL 1 DAY), INTERVAL 3 {% parameter compare_to %}))
+      DATEADD({% parameter compare_to %},-3,DATEADD(day,-1,{% date_end current_date_range %}) )
       {% endif %};;
     hidden: yes
   }
@@ -174,14 +164,14 @@ view: _date_comparison {
     sql:
        {% if current_date_range._is_filtered %}
          CASE
-           WHEN {% condition current_date_range %}  ${event_raw} {% endcondition %}
-           THEN "This {% parameter compare_to %}"
+           WHEN {% condition current_date_range %} ${event_raw} {% endcondition %}
+           THEN 'This {% parameter compare_to %}'
            WHEN ${event_raw} between ${period_2_start} and ${period_2_end}
-           THEN "Last {% parameter compare_to %}"
+           THEN 'Last {% parameter compare_to %}'
            WHEN ${event_raw} between ${period_3_start} and ${period_3_end}
-           THEN "2 {% parameter compare_to %}s Ago"
+           THEN '2 {% parameter compare_to %}s Ago'
            WHEN ${event_raw} between ${period_4_start} and ${period_4_end}
-           THEN "3 {% parameter compare_to %}s Ago"
+           THEN '3 {% parameter compare_to %}s Ago'
          END
        {% else %}
          NULL
@@ -198,7 +188,7 @@ view: _date_comparison {
     sql:
        {% if current_date_range._is_filtered %}
          CASE
-           WHEN {% condition current_date_range %} ${event_raw} /*findme6*/{% endcondition %}
+           WHEN {% condition current_date_range %} (${event_raw}) {% endcondition %}
            THEN 1
            WHEN ${event_raw} between ${period_2_start} and ${period_2_end}
            THEN 2
@@ -217,35 +207,34 @@ view: _date_comparison {
     description: "Use this as your date dimension when comparing periods. Aligns the all previous periods onto the current period"
     label: "Current Period"
     type: time
-    sql: TIMESTAMP_ADD({% date_start current_date_range %},INTERVAL (${day_in_period}-1) DAY) ;;
+    sql: DATEADD(day,${day_in_period}-1,{% date_start current_date_range %} ) ;;
     view_label: "Timeline Comparison Fields"
     timeframes: [date, week, month, quarter, year]
   }
 
   dimension: day_in_period {
-    view_label: "Timeline Comparison Fields"
     description: "Gives the number of days since the start of each periods. Use this to align the event dates onto the same axis, the axes will read 1,2,3, etc."
     type: number
     sql:
     {% if current_date_range._is_filtered %}
       CASE
-        WHEN {% condition current_date_range %} ${event_raw} {% endcondition %}
-        THEN TIMESTAMP_DIFF(${event_raw},{% date_start current_date_range %},DAY)+1
+        WHEN {% condition current_date_range %} (${event_raw}) {% endcondition %}
+        THEN DATEDIFF(day, {% date_start current_date_range %},${event_raw})+1
 
         WHEN ${event_raw} between ${period_2_start} and ${period_2_end}
-        THEN TIMESTAMP_DIFF(${event_raw}, ${period_2_start},DAY)+1
+        THEN DATEDIFF(day,${period_2_start},${event_raw})+1
 
         WHEN ${event_raw} between ${period_3_start} and ${period_3_end}
-        THEN TIMESTAMP_DIFF(${event_raw}, ${period_3_start},DAY)+1
+        THEN DATEDIFF(day,${period_3_start},${event_raw})+1
 
         WHEN ${event_raw} between ${period_4_start} and ${period_4_end}
-        THEN TIMESTAMP_DIFF(${event_raw}, ${period_4_start},DAY)+1
+        THEN DATEDIFF(day,${period_4_start},${event_raw})+1
       END
 
     {% else %} NULL
     {% endif %}
     ;;
-    hidden: no
+    hidden: yes
   }
 
 }
