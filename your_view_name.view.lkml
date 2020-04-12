@@ -3,9 +3,10 @@ include: "_date_comparison.view.lkml"
 view: your_view_name {
 
 #---- This is an example view file
-  dimension_group: your_date_dimension {
+  dimension_group: date_dimension {
     type: time
     timeframes: [date, raw]
+    sql: ${TABLE}.DATE ;;
   }
 
 
@@ -13,7 +14,7 @@ view: your_view_name {
   extends: [_date_comparison]
 
   dimension: event_raw{
-    sql:  ${your_date_dimension_time::datetime} ;;
+    sql:  ${TABLE}.DATE_DIMENSION  ;;
     type: date_raw
     hidden: yes
   }
