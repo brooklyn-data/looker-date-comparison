@@ -234,7 +234,7 @@ view: _date_comparison {
     {% else %} NULL
     {% endif %}
     ;;
-    hidden: yes
+    hidden: no
   }
 
 }
