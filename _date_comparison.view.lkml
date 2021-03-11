@@ -100,7 +100,7 @@ view: _date_comparison {
     type: date
     sql:
       {% if compare_to._parameter_value == "Period" %}
-      DATEADD(day,-1,${period_2_start})
+      DATEADD(day,-1,${period_3_start})
       {% else %}
       DATEADD({% parameter compare_to %},-3,DATEADD(day,-1,{% date_end current_date_range %}) )
       {% endif %};;

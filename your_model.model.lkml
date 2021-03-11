@@ -16,22 +16,22 @@ explore: your_view_name {
   {% if your_view_name.previous_date_range._is_filtered or your_view_name.compare_to._in_query %}
   {% if your_view_name.comparison_periods._parameter_value == "2" %}
   or
-  ${event_raw} between ${period_2_start} and ${period_2_end} )
+  ${event_raw} >= ${period_2_start} and ${event_raw} < ${period_2_end} )
 
   {% elsif your_view_name.comparison_periods._parameter_value == "3" %}
   or
-  ${event_raw} between ${period_2_start} and ${period_2_end}
+  ${event_raw} >= ${period_2_start} and ${event_raw} < ${period_2_end}
   or
-  ${event_raw} between ${period_3_start} and ${period_3_end} )
+  ${event_raw} >= ${period_3_start} and ${event_raw} < ${period_3_end} )
 
 
   {% elsif your_view_name.comparison_periods._parameter_value == "4" %}
   or
-  ${event_raw} between ${period_2_start} and ${period_2_end}
+  ${event_raw} >= ${period_2_start} and ${event_raw} < ${period_2_end}
   or
-  ${event_raw} between ${period_3_start} and ${period_3_end}
+  ${event_raw} >= ${period_3_start} and ${event_raw} < ${period_3_end}
   or
-  ${event_raw} between ${period_4_start} and ${period_4_end} )
+  ${event_raw} >= ${period_4_start} and ${event_raw} < ${period_4_end} )
 
   {% else %} AND 1 = 1 )
   {% endif %}
